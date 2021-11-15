@@ -6,11 +6,9 @@ import torch
 from gym.spaces.box import Box
 
 from agar.Env import AgarEnv
-from baselines import bench
-from baselines.common.vec_env import VecEnvWrapper
-from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-from baselines.common.vec_env.shmem_vec_env import ShmemVecEnv
-from baselines.common.vec_env.vec_normalize import \
+from stable_baselines3.common.vec_env import VecEnvWrapper
+from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env.vec_normalize import \
     VecNormalize as VecNormalize_
 
 try:
@@ -46,10 +44,10 @@ def make_vec_envs(args,
                   device):
     envs = [make_env(args, seed, i) for i in range(num_processes)]
 
-    if len(envs) > 1:
-        envs = ShmemVecEnv(envs, context='fork')
-    else:
-        envs = DummyVecEnv(envs)
+    # if len(envs) > 1:
+    #     envs = ShmemVecEnv(envs, context='fork')
+    # else:
+    envs = DummyVecEnv(envs)
 
     envs = VecPyTorch(envs, device)
 
@@ -64,7 +62,7 @@ class VecPyTorch(VecEnvWrapper):
 
     def reset(self):
         obs = self.venv.reset()
-        if type(obs).__name__=='dict':
+        if type(obs).__name__=='OrderedDict':
             obs = {key:torch.from_numpy(obs[key]).float().to(self.device) for key in obs}
         else:
             obs = torch.from_numpy(obs).float().to(self.device)
@@ -79,7 +77,7 @@ class VecPyTorch(VecEnvWrapper):
 
     def step_wait(self):
         obs, reward, done, info = self.venv.step_wait()
-        if type(obs).__name__=='dict':
+        if type(obs).__name__=='OrderedDict':
             obs = {key:torch.from_numpy(obs[key]).float().to(self.device) for key in obs}
         else:
             obs = torch.from_numpy(obs).float().to(self.device)
